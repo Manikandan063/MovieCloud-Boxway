@@ -1,0 +1,304 @@
+import React, { useState, useMemo } from 'react';
+import { Plus, Edit, Search, ArrowRight, Clock } from 'lucide-react';
+import api from '@/services/api';
+import { useApp } from '@/context/AppContext';
+import StatusBadge from '@/components/ui/StatusBadge';
+import Modal from '@/components/ui/Modal';
+import ProjectForm from '@/components/forms/ProjectForm';
+import ProjectPhases from '@/components/projects/ProjectPhases';
+import { projectPhaseLabels } from '@/utils/mockData';
+import type { Project, ProjectStatus } from '@/types';
+import { formatCurrency } from '@/utils/formatters';
+import { PageContainer } from '@/components/ui/Layout';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import SearchInput from '@/components/ui/SearchInput';
+
+const Projects: React.FC = () => {
+  const { projects, refreshProjects, clients, staff } = useApp();
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshProjects();
+    setIsRefreshing(false);
+  };
+
+  const filteredProjects = useMemo(() => {
+    if (!Array.isArray(projects)) return [];
+    return projects.filter((p) => {
+      const name = p?.name || '';
+      const desc = p?.description || '';
+      const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) ||
+        desc.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || p?.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [projects, search, statusFilter]);
+
+  const handleAddProject = () => {
+    setEditingProject(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveProject = async (data: any) => {
+    setIsSaving(true);
+    try {
+      const payload = {
+        ...data,
+        client: data.clientId, // Map clientId to client for backend
+      };
+
+      if (editingProject) {
+        await api.put(`/ projects / ${editingProject.id} `, payload);
+      } else {
+        await api.post('/projects', payload);
+      }
+      refreshProjects();
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Error saving project:', error);
+      alert('Failed to save project. Ensure all fields are valid.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdatePhase = async (projectId: string, phaseIndex: number, status: string) => {
+    try {
+      const project = projects.find(p => p.id === projectId);
+      if (!project) return;
+
+      const newPhases = [...project.phases];
+      newPhases[phaseIndex] = { ...newPhases[phaseIndex], status: status as any };
+
+      // Calculate progress
+      const completedPhases = newPhases.filter(ph => ph.status === 'completed').length;
+      const inProgressPhases = newPhases.filter(ph => ph.status === 'in-progress').length;
+      const progress = Math.round(((completedPhases + inProgressPhases * 0.5) / newPhases.length) * 100);
+
+      const payload = {
+        ...project,
+        phases: newPhases,
+        progress: progress,
+        client: project.clientId, // Match backend field mapping
+      };
+
+      await api.put(`/ projects / ${projectId} `, payload);
+      refreshProjects();
+
+      // Update selected project view if open
+      if (selectedProject?.id === projectId) {
+        const updatedProject = { ...project, phases: newPhases, progress };
+        setSelectedProject(updatedProject);
+      }
+    } catch (error) {
+      console.error('Error updating phase:', error);
+      alert('Failed to update phase status.');
+    }
+  };
+
+  const getStatusBadgeVariant = (status: ProjectStatus) => {
+    switch (status) {
+      case 'active': return 'info';
+      case 'completed': return 'success';
+      case 'on-hold': return 'warning';
+      case 'planning': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const getClientName = (clientId: string) => {
+    return clients.find(c => c.id === clientId)?.name || 'Unknown Client';
+  };
+
+  return (
+    <PageContainer variant="dashboard">
+      <SectionHeader
+        title="Project Portfolio"
+        description={`Monitoring ${projects?.length || 0} architectural projects across various delivery stages.`}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
+        actions={
+          <button onClick={handleAddProject} className="btn-primary gap-2 h-10 px-4">
+            <Plus className="w-4 h-4" />
+            <span>Create New Project</span>
+          </button>
+        }
+      />
+
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-8">
+        <div className="flex flex-col md:flex-row gap-4">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search projects by name, description, client..."
+            className="flex-1"
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input-field w-full md:w-52 h-10"
+          >
+            <option value="all">All Project Status</option>
+            <option value="planning">Initial Planning</option>
+            <option value="active">Active Execution</option>
+            <option value="on-hold">On-Hold / Paused</option>
+            <option value="completed">Successfully Completed</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {filteredProjects.map((project) => {
+          if (!project) return null;
+          const currentPhase = (project.phases || []).find(p => p.status === 'in-progress');
+          return (
+            <div
+              key={project.id}
+              className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-card-hover transition-all duration-300 flex flex-col group cursor-pointer"
+              onClick={() => setSelectedProject(project)}
+            >
+              <div className="p-5 flex-1">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <h3 className="text-base font-bold text-foreground leading-tight group-hover:text-primary transition-colors truncate">
+                      {project.name}
+                    </h3>
+                    <p className="text-[12px] text-muted-foreground font-medium mt-1">
+                      {getClientName(project.clientId)}
+                    </p>
+                  </div>
+                  <StatusBadge variant={getStatusBadgeVariant(project.status)}>
+                    {project.status}
+                  </StatusBadge>
+                </div>
+
+                <p className="text-[13px] text-muted-foreground line-clamp-2 mb-6 leading-relaxed">
+                  {project.description}
+                </p>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
+                      Current Progress
+                    </span>
+                    <span className="text-foreground tabular-nums">{project.progress}%</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h - full rounded - full transition - all duration - 700 ${project.progress > 70 ? 'bg-success' : project.progress > 30 ? 'bg-primary' : 'bg-warning'
+                        } `}
+                      style={{ width: `${project.progress}% ` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-border/80">
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold leading-none">Active Phase</p>
+                    <p className="text-[13px] font-semibold text-foreground truncate">
+                      {currentPhase ? projectPhaseLabels[currentPhase.phase] : 'Not Started'}
+                    </p>
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold leading-none">Budget</p>
+                    <p className="text-[13px] font-bold text-foreground tabular-nums">
+                      {formatCurrency(project.budget)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-5 py-3 bg-muted/30 border-t border-border flex items-center justify-between group-hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-1.5">
+                    {(project.assignedStaff || []).slice(0, 3).map((staffId) => (
+                      <div key={staffId} className="w-6 h-6 rounded-full bg-primary/20 border-2 border-card flex items-center justify-center text-[9px] font-bold text-primary">
+                        {staff.find(s => s.id === staffId)?.name?.[0] || '?'}
+                      </div>
+                    ))}
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    {(project.assignedStaff || []).length} Team Members
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditProject(project);
+                    }}
+                    className="p-1.5 rounded-md hover:bg-card-elevated text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button className="flex items-center gap-2 text-[11px] font-bold text-primary group/btn">
+                    <span>View Roadmap</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {filteredProjects.length === 0 && (
+        <div className="text-center py-20 bg-muted/10 rounded-2xl border-2 border-dashed border-border">
+          <div className="w-12 h-12 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="w-6 h-6 text-muted-foreground/40" />
+          </div>
+          <h4 className="text-sm font-bold text-foreground">No projects found</h4>
+          <p className="text-xs text-muted-foreground mt-1 max-w-[200px] mx-auto">Try adjusting your search filters to find what you're looking for.</p>
+        </div>
+      )}
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingProject ? 'Edit Project Plan' : 'Initiate New Project'}
+        size="lg"
+      >
+        <ProjectForm
+          initialData={editingProject || undefined}
+          clients={clients}
+          staff={staff}
+          onSubmit={handleSaveProject}
+          onCancel={() => setIsModalOpen(false)}
+          isSaving={isSaving}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={!!selectedProject}
+        onClose={() => setSelectedProject(null)}
+        title={selectedProject?.name || 'Project Roadmap & Phases'}
+        size="xl"
+      >
+        {selectedProject && (
+          <ProjectPhases
+            project={selectedProject}
+            onUpdatePhase={(phaseIndex, status) =>
+              handleUpdatePhase(selectedProject.id, phaseIndex, status)
+            }
+          />
+        )}
+      </Modal>
+    </PageContainer>
+  );
+};
+
+export default Projects;
