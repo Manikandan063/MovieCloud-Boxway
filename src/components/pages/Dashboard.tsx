@@ -18,11 +18,28 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import { projectPhaseLabels } from '@/utils/mockData';
 import { PageContainer } from '@/components/ui/Layout';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import DashboardDetailModal from '@/components/ui/DashboardDetailModal';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { staff, refreshStaff, clients, refreshClients, projects, refreshProjects, payroll } = useApp();
+  const { staff, clients, projects, payroll } = useApp();
   const navigate = useNavigate();
+
+  const [detailModal, setDetailModal] = React.useState<{
+    isOpen: boolean;
+    title: string;
+    type: 'projects' | 'staff' | 'clients' | 'payroll' | null;
+    data: any[];
+  }>({
+    isOpen: false,
+    title: '',
+    type: null,
+    data: []
+  });
+
+  const openDetail = (title: string, type: 'projects' | 'staff' | 'clients' | 'payroll', data: any[]) => {
+    setDetailModal({ isOpen: true, title, type, data });
+  };
 
   const isAdmin = user?.role === 'admin';
   const isStaff = !isAdmin;
@@ -51,77 +68,95 @@ const Dashboard: React.FC = () => {
 
   return (
     <PageContainer>
-      {/* Welcome */}
-      <SectionHeader
-        title={`Welcome back, ${user?.name.split(' ')[0] || 'User'}!`}
-        description={`Here's what's happening with your ${isAdmin ? 'organization' : 'projects'} today.`}
-        onRefresh={async () => {
-          await Promise.all([refreshStaff(), refreshClients(), refreshProjects()]);
-        }}
-      />
+      {/* Hero Section & Quick Actions */}
+      <div className="mb-8 flex flex-col xl:flex-row xl:items-center justify-between gap-8">
+        <div>
+          <h2 className="text-3xl font-display font-black text-foreground tracking-tighter leading-tight">
+            Welcome back, {user?.name.split(' ')[0] || 'User'}!
+          </h2>
+          <p className="text-[13px] font-medium text-muted-foreground mt-2 flex items-center gap-2">
+            Managing {isAdmin ? 'global organization operations' : 'assigned project portfolios'} today.
+          </p>
+        </div>
 
-      {/* Admin Dashboard */}
+        {/* Integrated Quick Actions - Re-designed as compact tokens */}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => navigate('/staff', { state: { openRegister: true } })}
+            className="h-12 pl-2 pr-6 bg-card border border-border/50 rounded-2xl shadow-sm hover:shadow-md transition-all group flex items-center gap-3 hover:border-primary/40 active:scale-[0.98]"
+          >
+            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <UserPlus className="w-4 h-4 text-primary" />
+            </div>
+            <span className="text-[12px] font-bold text-foreground">Add Staff</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/projects')}
+            className="h-12 pl-2 pr-6 bg-card border border-border/50 rounded-2xl shadow-sm hover:shadow-md transition-all group flex items-center gap-3 hover:border-secondary/40 active:scale-[0.98]"
+          >
+            <div className="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+              <Briefcase className="w-4 h-4 text-secondary" />
+            </div>
+            <span className="text-[12px] font-bold text-foreground">Add Project</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Admin Dashboard - Extreme Overhaul */}
       {isAdmin && (
-        <div className="space-y-8">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              title="Total Projects"
-              value={projectList.length}
-              subtitle={`${activeProjects} active`}
-              icon={Building2}
-              variant="primary"
-              trend={{ value: 12, isPositive: true }}
-            />
-            <StatCard
-              title="Active Clients"
-              value={totalClients}
-              subtitle="Across all projects"
-              icon={Briefcase}
-              variant="accent"
-            />
-            <StatCard
-              title="Staff Members"
-              value={totalStaff}
-              subtitle={`${staffList.filter(s => s?.role === 'architect').length} architects`}
-              icon={Users}
-            />
-            <StatCard
-              title="Pending Payroll"
-              value={pendingPayroll}
-              subtitle="Awaiting approval"
-              icon={CreditCard}
-              variant={pendingPayroll > 0 ? 'accent' : 'default'}
-            />
-          </div>
-
-
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div
-              onClick={() => navigate('/staff', { state: { openRegister: true } })}
-              className="bg-card border border-border p-6 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-center gap-4 hover:border-primary/50"
-            >
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <UserPlus className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-foreground">Register Staff</h3>
-                <p className="text-xs text-muted-foreground">Add new employee</p>
-              </div>
+        <div className="space-y-10">
+          {/* Seamless Stats Command Center */}
+          <div className="bg-card border border-border/60 rounded-[2rem] shadow-xl overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-border/40">
+              <StatCard
+                title="Total Projects"
+                value={projectList.length}
+                subtitle={`${activeProjects} active execution`}
+                icon={Building2}
+                variant="primary"
+                trend={{ value: 12, isPositive: true }}
+                isSeamless
+                onClick={() => openDetail('Company Projects Portfolio', 'projects', projectList)}
+              />
+              <StatCard
+                title="Active Clients"
+                value={totalClients}
+                subtitle="Primary partnerships"
+                icon={Briefcase}
+                variant="accent"
+                isSeamless
+                onClick={() => openDetail('Global Client Network', 'clients', clientList)}
+              />
+              <StatCard
+                title="Staff Members"
+                value={totalStaff}
+                subtitle={`${staffList.filter(s => s?.role === 'architect').length} lead architects`}
+                icon={Users}
+                isSeamless
+                onClick={() => openDetail('Arch-Force Professional Staff', 'staff', staffList)}
+              />
+              <StatCard
+                title="Pending Payroll"
+                value={pendingPayroll}
+                subtitle="Payouts in queue"
+                icon={CreditCard}
+                variant={pendingPayroll > 0 ? 'accent' : 'default'}
+                isSeamless
+                onClick={() => openDetail('Pending Payroll Cycles', 'payroll', payrollList.filter(p => p.status === 'pending'))}
+              />
             </div>
           </div>
 
           {/* Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Project Status Overview */}
-            <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-              <SectionHeader
-                title="Project Status Overview"
-                className="mb-6"
-              />
-              <div className="space-y-5">
+            <div className="bg-card border border-border/60 rounded-[1.5rem] p-8 shadow-sm lg:col-span-2">
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-foreground tracking-tight">Architectural Workflow</h3>
+                <p className="text-[12px] text-muted-foreground mt-1">Status distribution across the project lifecycle.</p>
+              </div>
+              <div className="space-y-6">
                 {[
                   { label: 'Planning', count: projectList.filter(p => p?.status === 'planning').length, color: 'bg-muted-foreground/20' },
                   { label: 'Active', count: projectList.filter(p => p?.status === 'active').length, color: 'bg-info' },
@@ -148,14 +183,18 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Upcoming Deadlines */}
-            <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-              <SectionHeader
-                title="Upcoming Deadlines"
-                className="mb-6"
-              />
+            <div className="bg-card border border-border/60 rounded-[1.5rem] p-8 shadow-sm">
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-foreground tracking-tight">Upcoming Milestones</h3>
+                <p className="text-[12px] text-muted-foreground mt-1">Critical delivery dates in the next 30 days.</p>
+              </div>
               <div className="space-y-1">
                 {upcomingDeadlines.map((project) => (
-                  <div key={project.id} className="flex items-center gap-4 p-2.5 rounded-lg hover:bg-muted/30 transition-colors group">
+                  <div
+                    key={project.id}
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted transition-all group cursor-pointer active:scale-[0.98]"
+                  >
                     <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center group-hover:bg-background transition-colors">
                       <Clock className="w-4 h-4 text-muted-foreground" />
                     </div>
@@ -188,17 +227,20 @@ const Dashboard: React.FC = () => {
                 value={assignedProjects.length}
                 icon={Building2}
                 variant="primary"
+                onClick={() => openDetail('Your Assigned Projects', 'projects', assignedProjects)}
               />
               <StatCard
                 title="Tasks In Progress"
                 value={assignedProjects.filter(p => p.status === 'active').length}
                 icon={TrendingUp}
                 variant="accent"
+                onClick={() => openDetail('Active Execution Pipeline', 'projects', assignedProjects.filter(p => p.status === 'active'))}
               />
               <StatCard
                 title="Completed"
                 value={assignedProjects.filter(p => p.status === 'completed').length}
                 icon={CheckCircle2}
+                onClick={() => openDetail('Successfully Delivered Assets', 'projects', assignedProjects.filter(p => p.status === 'completed'))}
               />
             </div>
 
@@ -215,7 +257,8 @@ const Dashboard: React.FC = () => {
                     return (
                       <div
                         key={project.id}
-                        className="p-5 rounded-xl border border-border hover:border-secondary/30 hover:shadow-sm transition-all bg-background/50"
+                        onClick={() => navigate(`/projects/${project.id}`)}
+                        className="p-5 rounded-xl border border-border hover:border-secondary/30 hover:shadow-lg transition-all bg-background/50 cursor-pointer active:scale-[0.98]"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div>
@@ -265,6 +308,13 @@ const Dashboard: React.FC = () => {
           </div>
         )
       }
+      <DashboardDetailModal
+        isOpen={detailModal.isOpen}
+        onClose={() => setDetailModal(prev => ({ ...prev, isOpen: false }))}
+        title={detailModal.title}
+        type={detailModal.type}
+        data={detailModal.data}
+      />
     </PageContainer >
   );
 };

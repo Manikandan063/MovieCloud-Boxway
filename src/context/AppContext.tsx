@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import api from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 import type { Staff, Client, Project, PayrollRecord } from '@/types';
 
 interface AppContextType {
@@ -10,12 +11,15 @@ interface AppContextType {
     projects: Project[];
     refreshProjects: () => Promise<void>;
     payroll: PayrollRecord[];
+    refreshPayroll: () => Promise<void>;
+    updatePayrollStatus: (recordId: string, status: 'pending' | 'approved' | 'paid') => Promise<void>;
     setPayroll: (payroll: PayrollRecord[]) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
     const [staff, setStaff] = useState<Staff[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
@@ -106,21 +110,69 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    useEffect(() => {
+    const refreshPayroll = async () => {
         const token = localStorage.getItem('token');
-        if (token) {
+        if (!token) return;
+        try {
+            const response = await api.get('/payroll');
+            if (response.data.success && Array.isArray(response.data.data)) {
+                const mappedPayroll = response.data.data.map((p: any) => {
+                    // Backend stores month as "January 2025" or similar
+                    const monthParts = p.month.split(' ');
+                    const monthName = monthParts[0];
+                    const yearVal = monthParts[1] ? parseInt(monthParts[1]) : 2025;
+
+                    return {
+                        id: p._id,
+                        staffId: p.staff?._id || p.staff || '',
+                        // Carry populated names for faster lookup or fallback
+                        staffName: p.staff?.name,
+                        staffRole: p.staff?.role,
+                        month: monthName,
+                        year: yearVal,
+                        baseSalary: p.basicSalary || 0,
+                        attendance: p.attendanceDays || 0,
+                        totalDays: 30,
+                        deductions: (p.basicSalary || 0) - (p.totalCalculatedSalary || 0) + (p.allowances || 0),
+                        bonus: p.allowances || 0,
+                        netSalary: p.totalCalculatedSalary || 0,
+                        status: (p.status || 'pending').toLowerCase(),
+                    };
+                });
+                setPayroll(mappedPayroll);
+            }
+        } catch (error) {
+            console.error('Error fetching payroll:', error);
+        }
+    };
+
+    const updatePayrollStatus = async (recordId: string, status: 'pending' | 'approved' | 'paid') => {
+        try {
+            const backendStatus = status.charAt(0).toUpperCase() + status.slice(1);
+            const response = await api.put(`/payroll/${recordId}`, { status: backendStatus });
+            if (response.data.success) {
+                await refreshPayroll();
+            }
+        } catch (error) {
+            console.error('Error updating payroll status:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
             refreshStaff();
             refreshClients();
             refreshProjects();
+            refreshPayroll();
         }
-    }, []);
+    }, [user]);
 
     return (
         <AppContext.Provider value={{
             staff, refreshStaff,
             clients, refreshClients,
             projects, refreshProjects,
-            payroll, setPayroll
+            payroll, refreshPayroll, updatePayrollStatus, setPayroll
         }}>
             {children}
         </AppContext.Provider>

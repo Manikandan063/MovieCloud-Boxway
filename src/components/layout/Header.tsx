@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import UserIcon from '@/components/ui/UserIcon';
 
 interface HeaderProps {
-  title: string;
+  title?: string;
   onMenuClick?: () => void;
 }
 
@@ -21,7 +21,11 @@ const Header: React.FC<HeaderProps> = ({ title, onMenuClick }) => {
             <Menu className="w-5 h-5 text-[#1F1F1F]" />
           </button>
         )}
-        <h1 className="text-sm font-bold uppercase tracking-[0.3em] text-[#1F1F1F] border-l-2 border-[#6B8E23] pl-6">{title}</h1>
+        {title && (
+          <h1 className="text-sm font-bold uppercase tracking-[0.3em] text-[#1F1F1F] border-l-2 border-[#6B8E23] pl-6 transition-all animate-in fade-in slide-in-from-left-4">
+            {title}
+          </h1>
+        )}
       </div>
 
       <div className="flex items-center gap-8">

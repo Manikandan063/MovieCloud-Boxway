@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import api from '@/services/api';
 
 // Using 'any' for simplicity to match likely usage, or could define interface if I knew it.
@@ -28,6 +28,39 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    const restoreSession = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const response = await api.get('/auth/me');
+            if (response.data.success) {
+                const userData = response.data.data;
+                setUser({
+                    id: userData._id || userData.id,
+                    name: userData.name,
+                    email: userData.email,
+                    role: userData.role.toLowerCase() as UserRole
+                });
+            } else {
+                localStorage.removeItem('token');
+            }
+        } catch (error) {
+            console.error('Session restoration failed:', error);
+            localStorage.removeItem('token');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        restoreSession();
+    }, []);
 
     const login = async (email: string, password?: string): Promise<LoginResult> => {
         try {
@@ -39,7 +72,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setUser({
                     id: userData.id,
                     name: userData.name,
-                    email: email, // Email isn't returned in the user object from this specific backend endpoint, using from input
+                    email: email,
                     role: userData.role.toLowerCase() as UserRole
                 });
                 return { success: true };
@@ -53,12 +86,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const logout = () => {
+        localStorage.removeItem('token');
         setUser(null);
     };
 
     return (
         <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
-            {children}
+            {!loading && children}
         </AuthContext.Provider>
     );
 };

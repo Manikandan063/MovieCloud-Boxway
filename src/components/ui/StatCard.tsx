@@ -11,6 +11,8 @@ interface StatCardProps {
     isPositive: boolean;
   };
   variant?: 'default' | 'primary' | 'accent';
+  isSeamless?: boolean;
+  onClick?: () => void;
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -20,6 +22,8 @@ const StatCard: React.FC<StatCardProps> = ({
   icon: Icon,
   trend,
   variant = 'default',
+  isSeamless = false,
+  onClick,
 }) => {
   const iconContainerClasses = {
     default: 'bg-muted text-muted-foreground',
@@ -28,25 +32,38 @@ const StatCard: React.FC<StatCardProps> = ({
   };
 
   return (
-    <div className="stat-card group hover:shadow-md transition-all duration-300 p-5 bg-card border border-border rounded-xl">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-          <p className="text-2xl font-display font-bold text-foreground tracking-tight">{value}</p>
+    <div
+      onClick={onClick}
+      className={`
+      group transition-all duration-300 p-8 
+      ${isSeamless
+          ? 'bg-transparent'
+          : 'bg-card border border-border rounded-xl hover:shadow-md'
+        }
+      ${onClick ? 'cursor-pointer active:scale-[0.98]' : ''}
+    `}>
+      <div className="flex items-start justify-between gap-6">
+        <div className="space-y-2">
+          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{title}</p>
+          <p className="text-5xl font-display font-black text-foreground tracking-tighter tabular-nums leading-none">
+            {value}
+          </p>
           {subtitle && (
-            <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+            <p className="text-xs font-medium text-muted-foreground/70">{subtitle}</p>
           )}
           {trend && (
-            <div className={`flex items-center gap-1 text-[11px] font-semibold mt-2 ${trend.isPositive ? 'text-success' : 'text-destructive'
+            <div className={`flex items-center gap-1.5 text-[11px] font-bold mt-3 ${trend.isPositive ? 'text-success' : 'text-destructive'
               }`}>
-              <span>{trend.isPositive ? '↑' : '↓'}</span>
+              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-current/10">
+                {trend.isPositive ? '↑' : '↓'}
+              </span>
               <span>{Math.abs(trend.value)}%</span>
-              <span className="text-muted-foreground font-normal ml-0.5">vs last month</span>
+              <span className="text-muted-foreground font-normal ml-0.5 uppercase tracking-wider">Growth</span>
             </div>
           )}
         </div>
-        <div className={`p-2.5 rounded-lg ${iconContainerClasses[variant]} group-hover:bg-opacity-80 transition-all duration-300`}>
-          <Icon className="w-5 h-5" />
+        <div className={`p-3 rounded-2xl ${iconContainerClasses[variant]} group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
+          <Icon className="w-6 h-6" />
         </div>
       </div>
     </div>

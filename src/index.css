@@ -294,3 +294,38 @@
     }
   }
 }
+
+/* 
+  Print Optimization for Invoices
+  Ensures professional-grade payslip exports.
+*/
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .fixed.inset-0, 
+  .fixed.inset-0 * {
+    visibility: visible !important;
+  }
+  .fixed.inset-0 {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    background: white !important;
+    overflow: visible !important;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+  .bg-foreground {
+    background-color: #1F1F1F !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .bg-muted\/30 {
+    background-color: #f3f3f3 !important;
+    -webkit-print-color-adjust: exact;
+  }
+}

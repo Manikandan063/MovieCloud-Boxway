@@ -11,8 +11,9 @@ import { roleLabels } from '@/utils/mockData';
 import type { Staff as StaffType } from '@/types';
 import { formatCurrency } from '@/utils/formatters';
 import { PageContainer } from '@/components/ui/Layout';
-import { SectionHeader } from '@/components/ui/SectionHeader';
 import SearchInput from '@/components/ui/SearchInput';
+import StatCard from '@/components/ui/StatCard';
+import { Users, UserCheck, Briefcase } from 'lucide-react';
 
 const Staff: React.FC = () => {
   const { staff, refreshStaff, projects } = useApp();
@@ -21,9 +22,16 @@ const Staff: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffType | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const stats = useMemo(() => {
+    return {
+      total: staff.length,
+      active: staff.filter(s => projects.some(p => p.assignedStaff?.includes(s.id))).length,
+      totalAssigned: projects.reduce((sum, p) => sum + (p.assignedStaff?.length || 0), 0)
+    };
+  }, [staff, projects]);
 
   React.useEffect(() => {
     if (location.state?.openRegister) {
@@ -33,11 +41,6 @@ const Staff: React.FC = () => {
     }
   }, [location, navigate]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await refreshStaff();
-    setIsRefreshing(false);
-  };
 
   const filteredStaff = useMemo(() => {
     if (!Array.isArray(staff)) return [];
@@ -85,7 +88,7 @@ const Staff: React.FC = () => {
         contactInfo: { phone: data.phone },
         salaryDetails: { basicSalary: data.salary },
         joiningDate: data.joiningDate,
-        ...(data.password && { password: data.password })
+        password: data.password || 'Boxway@123'
       };
 
       if (editingStaff) {
@@ -203,22 +206,46 @@ const Staff: React.FC = () => {
 
   return (
     <PageContainer variant="dashboard">
-      <SectionHeader
-        title="Staff Directory"
-        description={`${staff?.length || 0} professional team members across all departments.`}
-        onRefresh={handleRefresh}
-        isRefreshing={isRefreshing}
-        actions={
-          <div className="flex items-center gap-3">
-            <button onClick={handleAddStaff} className="btn-primary gap-2 h-10 px-4">
-              <Plus className="w-4 h-4" />
-              <span>Add Staff</span>
-            </button>
-          </div>
-        }
-      />
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-display font-black text-foreground tracking-tighter leading-tight">Personnel Directory</h2>
+          <p className="text-sm text-muted-foreground mt-1.5 flex items-center gap-2">
+            {staff?.length || 0} professional team members across all departments.
+          </p>
+        </div>
+        <button onClick={handleAddStaff} className="btn-primary gap-2 h-11 px-6 shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30 active:scale-[0.98]">
+          <Plus className="w-4 h-4" />
+          <span className="font-black text-[11px] uppercase tracking-[0.2em]">Add Staff</span>
+        </button>
+      </div>
 
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-8">
+      {/* Extreme Stats Grid */}
+      <div className="bg-card border border-border/60 rounded-[2rem] shadow-xl overflow-hidden mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/40">
+          <StatCard
+            title="Active Workforce"
+            value={stats.total}
+            icon={Users}
+            isSeamless
+          />
+          <StatCard
+            title="Deployed Staff"
+            value={stats.active}
+            icon={UserCheck}
+            variant="primary"
+            isSeamless
+          />
+          <StatCard
+            title="Venture Allocation"
+            value={stats.totalAssigned}
+            icon={Briefcase}
+            variant="accent"
+            isSeamless
+          />
+        </div>
+      </div>
+
+      <div className="bg-card border border-border/60 rounded-xl p-4 shadow-sm mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <SearchInput
             value={search}

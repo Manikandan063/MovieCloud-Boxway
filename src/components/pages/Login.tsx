@@ -5,7 +5,7 @@ import { Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import UserIcon from '@/components/ui/UserIcon';
 import loginBg from '@/assets/login-bg.png';
-import logoIcon from '@/assets/logo-icon.png';
+import Logo from '@/components/ui/Logo';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -39,10 +39,6 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = (roleEmail: string, rolePass: string) => {
-    setEmail(roleEmail);
-    setPassword(rolePass);
-  };
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden flex items-center justify-center bg-gray-900">
@@ -62,8 +58,8 @@ const Login: React.FC = () => {
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
 
           <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-8">
-              <img src={logoIcon} alt="Boxway Logo" className="w-10 h-10 opacity-90 invert brightness-0 filter" />
+            <div className="flex items-center gap-3 mb-8 text-white">
+              <Logo size={40} className="opacity-90" />
               <span className="font-display font-bold text-3xl tracking-wide">Boxway</span>
             </div>
 
@@ -86,8 +82,8 @@ const Login: React.FC = () => {
         <div className="w-full lg:w-1/2 bg-white/95 backdrop-blur-xl p-8 lg:p-12 flex flex-col justify-center relative">
 
           <div className="max-w-xs mx-auto w-full">
-            <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-              <img src={logoIcon} alt="Logo" className="w-8 h-8" />
+            <div className="lg:hidden flex items-center gap-3 mb-8 justify-center text-gray-900">
+              <Logo size={32} />
               <span className="font-display font-bold text-2xl text-gray-900">Boxway</span>
             </div>
 
@@ -153,16 +149,6 @@ const Login: React.FC = () => {
               </button>
             </form>
 
-            {/* Quick Login Section */}
-            <div className="mt-8 pt-6 border-t border-dashed border-gray-200">
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest text-center mb-4">Quick Developer Access</p>
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => handleQuickLogin('admin@boxway.in', 'admin123')} className="py-1 px-2 text-xs bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors">Admin</button>
-                <button onClick={() => handleQuickLogin('architect@boxway.in', 'arch123')} className="py-1 px-2 text-xs bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors">Architect</button>
-                <button onClick={() => handleQuickLogin('hr@boxway.in', 'hr123')} className="py-1 px-2 text-xs bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors">HR Manager</button>
-                <button onClick={() => handleQuickLogin('intern@boxway.in', 'intern123')} className="py-1 px-2 text-xs bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors">Intern</button>
-              </div>
-            </div>
 
           </div>
         </div>

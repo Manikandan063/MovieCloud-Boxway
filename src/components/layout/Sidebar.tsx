@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useAuth, type UserRole } from '@/context/AuthContext';
 
+import Logo from '@/components/ui/Logo';
+
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -48,14 +50,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       {/* Logo */}
       <div className="h-20 flex items-center justify-between px-6 border-b border-white/10">
         {!collapsed && (
-          <div className="flex items-center gap-3">
-            <div className="w-1.5 h-1.5 bg-[#CFAE70] rounded-full" />
-            <span className="font-bold text-xl tracking-[0.1em] uppercase text-white">Boxway</span>
+          <div className="flex items-center gap-3 text-white">
+            <Logo size={24} />
+            <span className="font-bold text-xl tracking-[0.1em] uppercase">Boxway</span>
           </div>
         )}
         {collapsed && (
-          <div className="w-6 h-6 border border-[#CFAE70] rounded-full flex items-center justify-center mx-auto">
-            <div className="w-1.5 h-1.5 bg-[#CFAE70] rounded-full" />
+          <div className="flex items-center justify-center mx-auto text-white">
+            <Logo size={28} />
           </div>
         )}
         <button

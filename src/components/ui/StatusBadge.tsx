@@ -5,9 +5,10 @@ type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'pend
 interface StatusBadgeProps {
   variant?: BadgeVariant;
   children: React.ReactNode;
+  className?: string; // Support custom styles
 }
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({ variant = 'default', children }) => {
+const StatusBadge: React.FC<StatusBadgeProps> = ({ variant = 'default', children, className = '' }) => {
   const variantClasses: Record<BadgeVariant, string> = {
     default: 'bg-muted text-muted-foreground',
     success: 'bg-success/10 text-success',
@@ -20,7 +21,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ variant = 'default', children
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${variantClasses[variant]}`}>
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${variantClasses[variant]} ${className}`}>
       {children}
     </span>
   );

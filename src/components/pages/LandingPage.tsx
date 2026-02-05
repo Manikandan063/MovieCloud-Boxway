@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, MapPin, Phone, Mail, Instagram, Linkedin, Twitter } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Logo from '@/components/ui/Logo';
 
 // Assets
 import heroImg from '@/assets/luxury_interior_hero_1770009357994.png';
@@ -12,9 +13,9 @@ const LandingPage: React.FC = () => {
             {/* Navigation */}
             <nav className="fixed top-0 w-full z-50 bg-[#F6EFE6]/80 backdrop-blur-md border-b border-[#1F1F1F]/10">
                 <div className="max-w-[1440px] mx-auto px-8 md:px-16 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                        <Logo size={28} className="text-[#1F1F1F]" />
                         <span className="text-2xl font-display font-bold tracking-[0.1em] uppercase">Boxway</span>
-                        <div className="w-1.5 h-1.5 bg-[#CFAE70] rounded-full mt-2" />
                     </div>
 
                     <div className="hidden md:flex items-center gap-12 text-[10px] font-bold uppercase tracking-[0.2em]">
@@ -142,7 +143,8 @@ const LandingPage: React.FC = () => {
             <footer className="bg-[#F6EFE6] py-24 px-8 md:px-16 border-t border-[#1F1F1F]/10">
                 <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-16">
                     <div className="md:col-span-2 space-y-8">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
+                            <Logo size={28} className="text-[#1F1F1F]" />
                             <span className="text-2xl font-display font-bold tracking-[0.1em] uppercase">Boxway.</span>
                         </div>
                         <p className="max-w-sm text-[#8E8E8E] text-lg font-light leading-relaxed">

@@ -3,7 +3,6 @@ import { Building2, Users, IndianRupee, Layers, Save, Palette, Sun, Moon, Monito
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { PageContainer } from '@/components/ui/Layout';
-import { SectionHeader } from '@/components/ui/SectionHeader';
 import { FormGrid, FormField } from '@/components/ui/FormGrid';
 
 interface CompanySettings {
@@ -44,9 +43,9 @@ const Settings: React.FC = () => {
   const allTabs = [
     { id: 'appearance', label: 'Appearance', icon: Palette, roles: ['admin', 'architect', 'hr', 'accountant', 'intern'] },
     { id: 'company', label: 'Agency Profile', icon: Building2, roles: ['admin'] },
-    { id: 'roles', label: 'Access Control', icon: Users, roles: ['admin'] },
+    { id: 'roles', label: 'User Roles', icon: Users, roles: ['admin'] },
     { id: 'salary', label: 'Salary Matrices', icon: IndianRupee, roles: ['admin', 'hr', 'accountant'] },
-    { id: 'phases', label: 'Operational Phases', icon: Layers, roles: ['admin', 'architect'] },
+    { id: 'phases', label: 'Project Phases', icon: Layers, roles: ['admin', 'architect'] },
   ];
 
   const tabs = allTabs.filter(tab => tab.roles.includes(user?.role || ''));
@@ -61,10 +60,12 @@ const Settings: React.FC = () => {
 
   return (
     <PageContainer>
-      <SectionHeader
-        title="Settings & Configuration"
-        description="Manage your personal preferences and organizational standards."
-      />
+      <div className="mb-10">
+        <h2 className="text-3xl font-display font-black text-foreground tracking-tighter leading-tight">Settings & Configuration</h2>
+        <p className="text-sm text-muted-foreground mt-1.5 flex items-center gap-2">
+          Manage your personal preferences and organizational standards.
+        </p>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Navigation Sidebar */}
@@ -175,7 +176,7 @@ const Settings: React.FC = () => {
                 <div className="flex justify-end pt-6 border-t border-border">
                   <button onClick={handleSaveCompany} className="btn-primary h-10 px-6 gap-2">
                     <Save className="w-4 h-4" />
-                    <span>Synchronize Settings</span>
+                    <span>Save Settings</span>
                   </button>
                 </div>
               </div>
@@ -269,7 +270,7 @@ const Settings: React.FC = () => {
                 <div className="flex justify-end pt-6 border-t border-border mt-8">
                   <button onClick={handleSaveSalary} className="btn-primary h-10 px-8 gap-2">
                     <Save className="w-4 h-4" />
-                    <span>Apply Salary Updates</span>
+                    <span>Save Salaries</span>
                   </button>
                 </div>
               </div>

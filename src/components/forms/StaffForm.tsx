@@ -18,7 +18,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ initialData, onSubmit, onCancel, 
     role: initialData?.role || 'architect' as UserRole,
     phone: initialData?.phone || '',
     joiningDate: initialData?.joiningDate || new Date().toISOString().split('T')[0],
-    salary: initialData?.salary || 50000,
+    salary: initialData?.salary || 0,
     assignedProjects: initialData?.assignedProjects || [],
   });
 
@@ -67,16 +67,6 @@ const StaffForm: React.FC<StaffFormProps> = ({ initialData, onSubmit, onCancel, 
             </select>
           </FormField>
 
-          <FormField label="Login Password" required={!initialData} helpText={initialData ? "Leave blank to keep current password." : "Set a secure password for the new member."}>
-            <input
-              type="text"
-              required={!initialData}
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="input-field"
-              placeholder="e.g. arch@123"
-            />
-          </FormField>
 
           <FormField label="Phone Number" required>
             <input
@@ -96,18 +86,6 @@ const StaffForm: React.FC<StaffFormProps> = ({ initialData, onSubmit, onCancel, 
               value={formData.joiningDate}
               onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
               className="input-field"
-            />
-          </FormField>
-
-          <FormField label="Annual Salary (₹)" required helpText="Gross annual salary excluding bonuses.">
-            <input
-              type="number"
-              required
-              min={0}
-              value={formData.salary}
-              onChange={(e) => setFormData({ ...formData, salary: Number(e.target.value) })}
-              className="input-field tabular-nums"
-              placeholder="50000"
             />
           </FormField>
         </FormGrid>

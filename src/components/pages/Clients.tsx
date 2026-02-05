@@ -9,8 +9,9 @@ import ClientForm from '@/components/forms/ClientForm';
 import type { Client } from '@/types';
 import { formatCurrency } from '@/utils/formatters';
 import { PageContainer } from '@/components/ui/Layout';
-import { SectionHeader } from '@/components/ui/SectionHeader';
 import SearchInput from '@/components/ui/SearchInput';
+import StatCard from '@/components/ui/StatCard';
+import { Users, Building2, CreditCard } from 'lucide-react';
 
 const Clients: React.FC = () => {
   const { clients, refreshClients, projects } = useApp();
@@ -19,13 +20,16 @@ const Clients: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await refreshClients();
-    setIsRefreshing(false);
-  };
+  const stats = useMemo(() => {
+    return {
+      total: clients.length,
+      corporate: clients.filter(c => c.company).length,
+      totalValue: clients.reduce((sum, c) => sum + (c.contractValue || 0), 0)
+    };
+  }, [clients]);
+
+  // ... rest of logic
 
   const filteredClients = useMemo(() => {
     if (!Array.isArray(clients)) return [];
@@ -195,20 +199,46 @@ const Clients: React.FC = () => {
 
   return (
     <PageContainer>
-      <SectionHeader
-        title="Client Directory"
-        description={`Managing ${clients?.length || 0} active client accounts and their respective sites.`}
-        onRefresh={handleRefresh}
-        isRefreshing={isRefreshing}
-        actions={
-          <button onClick={handleAddClient} className="btn-primary gap-2 h-10 px-4">
-            <Plus className="w-4 h-4" />
-            <span>Add New Client</span>
-          </button>
-        }
-      />
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-display font-black text-foreground tracking-tighter leading-tight">Client Directory</h2>
+          <p className="text-sm text-muted-foreground mt-1.5 flex items-center gap-2">
+            Managing {clients?.length || 0} active client accounts and their respective sites.
+          </p>
+        </div>
+        <button onClick={handleAddClient} className="btn-primary gap-2 h-11 px-6 shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30 active:scale-[0.98]">
+          <Plus className="w-4 h-4" />
+          <span className="font-black text-[11px] uppercase tracking-[0.2em]">Add Client</span>
+        </button>
+      </div>
 
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-8">
+      {/* Extreme Stats Grid */}
+      <div className="bg-card border border-border/60 rounded-[2rem] shadow-xl overflow-hidden mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/40">
+          <StatCard
+            title="Total Portfolios"
+            value={stats.total}
+            icon={Users}
+            isSeamless
+          />
+          <StatCard
+            title="Corporate Entities"
+            value={stats.corporate}
+            icon={Building2}
+            variant="primary"
+            isSeamless
+          />
+          <StatCard
+            title="Contractual Volume"
+            value={formatCurrency(stats.totalValue)}
+            icon={CreditCard}
+            variant="accent"
+            isSeamless
+          />
+        </div>
+      </div>
+
+      <div className="bg-card border border-border/60 rounded-xl p-4 shadow-sm mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <SearchInput
             value={search}
