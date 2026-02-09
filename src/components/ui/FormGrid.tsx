@@ -13,12 +13,12 @@ export const FormGrid: React.FC<FormGridProps> = ({
 }) => {
     const gridCols = {
         1: 'grid-cols-1',
-        2: 'grid-cols-1 md:grid-cols-2',
-        3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+        2: 'grid-cols-1 sm:grid-cols-2',
+        3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
     };
 
     return (
-        <div className={`grid ${gridCols[columns]} gap-x-6 gap-y-4 ${className}`}>
+        <div className={`grid ${gridCols[columns]} gap-x-4 sm:gap-x-6 gap-y-4 ${className}`}>
             {children}
         </div>
     );

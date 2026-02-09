@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Download, CheckCircle, Clock, IndianRupee, FileText } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
@@ -17,7 +17,7 @@ const months = [
 ];
 
 const Payroll: React.FC = () => {
-  const { payroll, staff, refreshPayroll, updatePayrollStatus } = useApp();
+  const { payroll, payrollPagination, staff, refreshPayroll, updatePayrollStatus } = useApp();
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(months[new Date().getMonth()]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -27,13 +27,12 @@ const Payroll: React.FC = () => {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'accountant';
 
+  // Month/Year filter effect
   React.useEffect(() => {
-    refreshPayroll();
-  }, []);
+    refreshPayroll(1, payrollPagination.limit, selectedMonth, selectedYear.toString());
+  }, [selectedMonth, selectedYear]);
 
-  const filteredPayroll = useMemo(() => {
-    return payroll.filter(p => p.month === selectedMonth && p.year === selectedYear);
-  }, [payroll, selectedMonth, selectedYear]);
+  const filteredPayroll = payroll; // Now handled server-side
 
   const getStaffName = (staffId: string) => {
     const member = staff.find(s => s.id === staffId);
@@ -227,8 +226,8 @@ const Payroll: React.FC = () => {
       </div>
 
       {/* Extreme Stats Grid */}
-      <div className="bg-card border border-border/60 rounded-[2rem] shadow-xl overflow-hidden mb-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-border/40">
+      <div className="bg-card border border-border/60 rounded-[1.5rem] sm:rounded-[2rem] shadow-xl overflow-hidden mb-8 sm:mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x lg:divide-y-0 divide-border/40">
           <StatCard
             title="Total Monthly Payroll"
             value={formatCurrency(totalPayrollAmount)}
@@ -262,6 +261,10 @@ const Payroll: React.FC = () => {
         columns={columns}
         data={filteredPayroll}
         emptyMessage="No payroll records generated for the selected period."
+        currentPage={payrollPagination.currentPage}
+        totalPages={payrollPagination.pages}
+        totalRecords={payrollPagination.total}
+        onPageChange={(page) => refreshPayroll(page, payrollPagination.limit, selectedMonth, selectedYear.toString())}
       />
 
       {isAdmin && totalPending > 0 && (

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Edit, Search, ArrowRight, Clock } from 'lucide-react';
+import { Edit, Search, ArrowRight, Clock, Plus } from 'lucide-react';
 import api from '@/services/api';
 import { useApp } from '@/context/AppContext';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -17,7 +17,7 @@ import { useLoading } from '@/context/LoadingContext';
 import { SkeletonCard } from '@/components/ui/SkeletonLoader';
 
 const Projects: React.FC = () => {
-  const { projects, refreshProjects, clients, staff } = useApp();
+  const { projects, projectPagination, refreshProjects, clients, staff } = useApp();
   const { isApiLoading } = useLoading();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -28,24 +28,27 @@ const Projects: React.FC = () => {
 
   const stats = useMemo(() => {
     return {
-      total: projects.length,
+      total: projectPagination.total || projects.length,
       active: projects.filter(p => p.status === 'active').length,
       planning: projects.filter(p => p.status === 'planning').length
     };
-  }, [projects]);
+  }, [projects, projectPagination]);
 
+  // Debounced search effect
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      refreshProjects(1, projectPagination.limit, search, statusFilter);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const filteredProjects = useMemo(() => {
-    if (!Array.isArray(projects)) return [];
-    return projects.filter((p) => {
-      const name = p?.name || '';
-      const desc = p?.description || '';
-      const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) ||
-        desc.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || p?.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [projects, search, statusFilter]);
+  // Status filter effect
+  React.useEffect(() => {
+    refreshProjects(1, projectPagination.limit, search, statusFilter);
+  }, [statusFilter]);
+
+  const filteredProjects = projects; // Now handled server-side
+
 
   const handleAddProject = () => {
     setEditingProject(null);
@@ -110,8 +113,8 @@ const Projects: React.FC = () => {
       </div>
 
       {/* Extreme Stats Grid */}
-      <div className="bg-card border border-border/60 rounded-[2rem] shadow-xl overflow-hidden mb-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/40">
+      <div className="bg-card border border-border/60 rounded-[1.5rem] sm:rounded-[2rem] shadow-xl overflow-hidden mb-8 sm:mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/40">
           <StatCard
             title="Total Ventures"
             value={stats.total}
@@ -135,20 +138,20 @@ const Projects: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-card border border-border/60 rounded-xl p-4 shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
+      <div className="bg-card border border-border/60 rounded-xl p-3 sm:p-4 shadow-sm mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search projects by name, description, client..."
+            placeholder="Search portfolio..."
             className="flex-1"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="input-field w-full md:w-52 h-10"
+            className="input-field w-full sm:w-48 md:w-52 h-10 text-xs sm:text-sm"
           >
-            <option value="all">All Project Status</option>
+            <option value="all">All Stages</option>
             <option value="planning">Initial Planning</option>
             <option value="active">Active Execution</option>
             <option value="on-hold">On-Hold / Paused</option>
@@ -259,6 +262,30 @@ const Projects: React.FC = () => {
         )}
       </div>
 
+      {/* Pagination Footer */}
+      {projectPagination.pages > 1 && (
+        <div className="mt-8 px-6 py-4 bg-card border border-border/60 rounded-xl flex items-center justify-between">
+          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+            Total {projectPagination.total} Ventures • Page {projectPagination.currentPage} of {projectPagination.pages}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => refreshProjects(Math.max(1, projectPagination.currentPage - 1), projectPagination.limit, search, statusFilter)}
+              disabled={projectPagination.currentPage === 1}
+              className="p-2 rounded-lg bg-card border border-border text-foreground disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+            </button>
+            <button
+              onClick={() => refreshProjects(Math.min(projectPagination.pages, projectPagination.currentPage + 1), projectPagination.limit, search, statusFilter)}
+              disabled={projectPagination.currentPage === projectPagination.pages}
+              className="p-2 rounded-lg bg-card border border-border text-foreground disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+            </button>
+          </div>
+        </div>
+      )}
       {filteredProjects.length === 0 && (
         <div className="text-center py-20 bg-muted/10 rounded-2xl border-2 border-dashed border-border">
           <div className="w-12 h-12 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -285,7 +312,7 @@ const Projects: React.FC = () => {
         />
       </Modal>
 
-    </PageContainer>
+    </PageContainer >
   );
 };
 

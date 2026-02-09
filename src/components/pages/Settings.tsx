@@ -68,31 +68,33 @@ const Settings: React.FC = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
-        {/* Navigation Sidebar */}
-        <div className="lg:w-72 w-full flex-shrink-0 bg-card border border-border rounded-xl p-2 shadow-sm">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 group ${activeTab === tab.id
-                ? 'bg-primary/10 text-primary shadow-sm'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-            >
-              <div className={`p-1.5 rounded-md transition-colors ${activeTab === tab.id ? 'bg-primary text-primary-foreground' : 'bg-muted group-hover:bg-border'}`}>
-                <tab.icon className="w-4 h-4" />
-              </div>
-              <span className="font-semibold text-[13px]">{tab.label}</span>
-              {activeTab === tab.id && (
-                <div className="ml-auto w-1 h-4 bg-primary rounded-full" />
-              )}
-            </button>
-          ))}
+        {/* Responsive Navigation Sidebar/Top Bar */}
+        <div className="lg:w-72 w-full flex-shrink-0 bg-card border border-border rounded-xl p-1.5 sm:p-2 shadow-sm">
+          <div className="flex lg:flex-col overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 gap-1 sm:gap-0 no-scrollbar">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-shrink-0 lg:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-left transition-all duration-200 group whitespace-nowrap ${activeTab === tab.id
+                  ? 'bg-primary/10 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+              >
+                <div className={`p-1 sm:p-1.5 rounded-md transition-colors ${activeTab === tab.id ? 'bg-primary text-primary-foreground' : 'bg-muted group-hover:bg-border'}`}>
+                  <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
+                <span className="font-semibold text-[11px] sm:text-[13px]">{tab.label}</span>
+                {activeTab === tab.id && (
+                  <div className="hidden lg:block ml-auto w-1 h-4 bg-primary rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Dynamic Content Area */}
-        <div className="flex-1 w-full bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-          <div className="p-8">
+        <div className="flex-1 w-full bg-card border border-border rounded-xl shadow-sm overflow-hidden min-h-[400px]">
+          <div className="p-4 sm:p-8">
             {/* Appearance Settings */}
             {activeTab === 'appearance' && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">

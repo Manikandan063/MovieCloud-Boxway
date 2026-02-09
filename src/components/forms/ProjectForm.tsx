@@ -142,9 +142,14 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                 type="number"
                 required
                 min={0}
-                value={formData.budget}
-                onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })}
-                className="input-field tabular-nums"
+                step="any"
+                value={formData.budget || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({ ...formData, budget: val === '' ? 0 : Number(val) });
+                }}
+                onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                className="input-field tabular-nums focus:bg-white transition-colors"
                 placeholder="0"
               />
             </FormField>

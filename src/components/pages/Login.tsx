@@ -51,7 +51,7 @@ const Login: React.FC = () => {
       </div>
 
       {/* Glassmorphism Card */}
-      <div className="relative z-10 w-full max-w-5xl h-[640px] flex overflow-hidden shadow-2xl animate-fade-in mx-4 border border-white/10">
+      <div className="relative z-10 w-full max-w-5xl lg:h-[640px] flex flex-col lg:flex-row overflow-hidden shadow-2xl animate-fade-in mx-4 border border-white/10 rounded-2xl lg:rounded-none">
 
         {/* Left Panel - Glass Effect */}
         <div className="hidden lg:flex flex-col justify-between w-1/2 p-16 bg-[#3E2C24]/40 backdrop-blur-md border-r border-white/10 text-white relative">
@@ -79,15 +79,18 @@ const Login: React.FC = () => {
         </div>
 
         {/* Right Panel - Login Form */}
-        <div className="w-full lg:w-1/2 bg-white/95 backdrop-blur-xl p-8 lg:p-12 flex flex-col justify-center relative">
+        <div className="w-full lg:w-1/2 bg-white/95 backdrop-blur-xl p-8 sm:p-12 lg:p-12 flex flex-col justify-center relative min-h-[500px]">
 
-          <div className="max-w-xs mx-auto w-full">
-            <div className="lg:hidden flex items-center gap-3 mb-8 justify-center text-gray-900">
-              <Logo size={32} />
-              <span className="font-display font-bold text-2xl text-gray-900">Boxway</span>
+          <div className="max-w-xs mx-auto w-full py-8 lg:py-0">
+            <div className="lg:hidden flex flex-col items-center gap-4 mb-10 text-gray-900 text-center">
+              <Logo size={48} className="drop-shadow-sm" />
+              <div>
+                <span className="font-display font-bold text-2xl text-gray-900 block tracking-tight">Boxway</span>
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.3em]">Architectural Studio</span>
+              </div>
             </div>
 
-            <div className="mb-10 flex flex-col items-center">
+            <div className="mb-10 hidden lg:flex flex-col items-center">
               <div className="w-16 h-16 border border-[#1F1F1F]/10 flex items-center justify-center mb-8">
                 <UserIcon size={32} />
               </div>
@@ -103,14 +106,14 @@ const Login: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-0 py-2 border-b border-gray-300 focus:border-black focus:outline-none bg-transparent transition-colors placeholder:text-gray-300"
+                  className="w-full px-0 py-2 border-b border-gray-300 focus:border-[#CFAE70] focus:outline-none bg-transparent transition-colors placeholder:text-gray-300 text-sm"
                   placeholder="name@boxway.in"
                 />
               </div>
@@ -121,13 +124,13 @@ const Login: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-0 py-2 border-b border-gray-300 focus:border-black focus:outline-none bg-transparent transition-colors placeholder:text-gray-300 pr-8"
+                  className="w-full px-0 py-2 border-b border-gray-300 focus:border-[#CFAE70] focus:outline-none bg-transparent transition-colors placeholder:text-gray-300 pr-10 text-sm"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 bottom-2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-0 bottom-2 text-gray-400 hover:text-gray-600 p-1"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -136,7 +139,7 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#1F1F1F] text-white h-14 mt-10 hover:bg-[#CFAE70] transition-all duration-500 flex items-center justify-center gap-4 group disabled:opacity-70 disabled:cursor-not-allowed uppercase text-[10px] font-bold tracking-[0.2em]"
+                className="w-full bg-[#1F1F1F] text-white h-14 mt-12 hover:bg-[#CFAE70] transition-all duration-500 flex items-center justify-center gap-4 group disabled:opacity-70 disabled:cursor-not-allowed uppercase text-[10px] font-bold tracking-[0.2em] shadow-lg hover:shadow-[#CFAE70]/20"
               >
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

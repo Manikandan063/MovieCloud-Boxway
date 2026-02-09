@@ -14,7 +14,7 @@ import StatCard from '@/components/ui/StatCard';
 import { Users, Building2, CreditCard } from 'lucide-react';
 
 const Clients: React.FC = () => {
-  const { clients, refreshClients, projects } = useApp();
+  const { clients, clientPagination, refreshClients, projects } = useApp();
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,27 +23,27 @@ const Clients: React.FC = () => {
 
   const stats = useMemo(() => {
     return {
-      total: clients.length,
+      total: clientPagination.total || clients.length,
       corporate: clients.filter(c => c.company).length,
       totalValue: clients.reduce((sum, c) => sum + (c.contractValue || 0), 0)
     };
-  }, [clients]);
+  }, [clients, clientPagination]);
 
-  // ... rest of logic
+  // Debounced search effect
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      refreshClients(1, 10, search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const filteredClients = useMemo(() => {
     if (!Array.isArray(clients)) return [];
     return clients.filter((c) => {
-      const name = c?.name || '';
-      const email = c?.email || '';
-      const location = c?.siteLocation || '';
-      const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) ||
-        email.toLowerCase().includes(search.toLowerCase()) ||
-        location.toLowerCase().includes(search.toLowerCase());
       const matchesPayment = paymentFilter === 'all' || c?.paymentStatus === paymentFilter;
-      return matchesSearch && matchesPayment;
+      return matchesPayment;
     });
-  }, [clients, search, paymentFilter]);
+  }, [clients, paymentFilter]);
 
   const handleAddClient = () => {
     setEditingClient(null);
@@ -121,10 +121,16 @@ const Clients: React.FC = () => {
       key: 'location',
       header: 'Site Location',
       render: (item: Client) => (
-        <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.siteLocation)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-primary transition-colors hover:underline"
+        >
           <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground/60" />
           <span className="truncate max-w-[180px]">{item.siteLocation}</span>
-        </div>
+        </a>
       ),
     },
     {
@@ -213,8 +219,8 @@ const Clients: React.FC = () => {
       </div>
 
       {/* Extreme Stats Grid */}
-      <div className="bg-card border border-border/60 rounded-[2rem] shadow-xl overflow-hidden mb-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/40">
+      <div className="bg-card border border-border/60 rounded-[1.5rem] sm:rounded-[2rem] shadow-xl overflow-hidden mb-8 sm:mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/40">
           <StatCard
             title="Total Portfolios"
             value={stats.total}
@@ -238,20 +244,20 @@ const Clients: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-card border border-border/60 rounded-xl p-4 shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
+      <div className="bg-card border border-border/60 rounded-xl p-3 sm:p-4 shadow-sm mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search by name, company, or site..."
+            placeholder="Search clients..."
             className="flex-1"
           />
           <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="input-field w-full md:w-52 h-10"
+            className="input-field w-full sm:w-48 md:w-52 h-10 text-xs sm:text-sm"
           >
-            <option value="all">All Payment Status</option>
+            <option value="all">All Payments</option>
             <option value="completed">Fully Paid</option>
             <option value="partial">Partial Payment</option>
             <option value="pending">Payment Pending</option>
@@ -264,6 +270,10 @@ const Clients: React.FC = () => {
         data={filteredClients}
         emptyMessage="No clients found matching your search"
         onRowClick={handleEditClient}
+        currentPage={clientPagination.currentPage}
+        totalPages={clientPagination.pages}
+        totalRecords={clientPagination.total}
+        onPageChange={(page) => refreshClients(page, clientPagination.limit, search)}
       />
 
       <Modal

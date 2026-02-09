@@ -3,34 +3,60 @@ import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Staff, Client, Project, PayrollRecord } from '@/types';
 
+export interface PaginationData {
+    total: number;
+    pages: number;
+    currentPage: number;
+    limit: number;
+}
+
 interface AppContextType {
     staff: Staff[];
-    refreshStaff: () => Promise<void>;
+    staffPagination: PaginationData;
+    refreshStaff: (page?: number, limit?: number, search?: string, role?: string) => Promise<void>;
     clients: Client[];
-    refreshClients: () => Promise<void>;
+    clientPagination: PaginationData;
+    refreshClients: (page?: number, limit?: number, search?: string) => Promise<void>;
     projects: Project[];
-    refreshProjects: () => Promise<void>;
+    projectPagination: PaginationData;
+    refreshProjects: (page?: number, limit?: number, search?: string, status?: string) => Promise<void>;
     payroll: PayrollRecord[];
-    refreshPayroll: () => Promise<void>;
+    payrollPagination: PaginationData;
+    refreshPayroll: (page?: number, limit?: number, month?: string, year?: string, status?: string) => Promise<void>;
     updatePayrollStatus: (recordId: string, status: 'pending' | 'approved' | 'paid') => Promise<void>;
     setPayroll: (payroll: PayrollRecord[]) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const initialPagination: PaginationData = {
+    total: 0,
+    pages: 1,
+    currentPage: 1,
+    limit: 10
+};
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const [staff, setStaff] = useState<Staff[]>([]);
-    const [clients, setClients] = useState<Client[]>([]);
-    const [projects, setProjects] = useState<Project[]>([]);
-    const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
+    const [staffPagination, setStaffPagination] = useState<PaginationData>(initialPagination);
 
-    const refreshStaff = async () => {
+    const [clients, setClients] = useState<Client[]>([]);
+    const [clientPagination, setClientPagination] = useState<PaginationData>(initialPagination);
+
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [projectPagination, setProjectPagination] = useState<PaginationData>(initialPagination);
+
+    const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
+    const [payrollPagination, setPayrollPagination] = useState<PaginationData>(initialPagination);
+
+    const refreshStaff = async (page = 1, limit = 10, search = '', role = 'all') => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
         try {
-            const response = await api.get('/users');
+            const roleParam = role !== 'all' ? `&role=${role}` : '';
+            const response = await api.get(`/users?page=${page}&limit=${limit}&search=${search}${roleParam}`);
             if (response.data.success && Array.isArray(response.data.data)) {
                 const mappedStaff = response.data.data.map((user: any) => ({
                     id: user._id,
@@ -43,6 +69,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     assignedProjects: [],
                 }));
                 setStaff(mappedStaff);
+                if (response.data.pagination) {
+                    setStaffPagination(response.data.pagination);
+                }
             } else {
                 setStaff([]);
             }
@@ -52,11 +81,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    const refreshClients = async () => {
+    const refreshClients = async (page = 1, limit = 10, search = '') => {
         const token = localStorage.getItem('token');
         if (!token) return;
         try {
-            const response = await api.get('/clients');
+            const response = await api.get(`/clients?page=${page}&limit=${limit}&search=${search}`);
             if (response.data.success && Array.isArray(response.data.data)) {
                 const mappedClients = response.data.data.map((client: any) => ({
                     id: client._id,
@@ -72,6 +101,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     totalPaid: client.totalPaid || 0,
                 }));
                 setClients(mappedClients);
+                if (response.data.pagination) {
+                    setClientPagination(response.data.pagination);
+                }
             } else {
                 setClients([]);
             }
@@ -81,11 +113,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    const refreshProjects = async () => {
+    const refreshProjects = async (page = 1, limit = 10, search = '', status = 'all') => {
         const token = localStorage.getItem('token');
         if (!token) return;
         try {
-            const response = await api.get('/projects');
+            const response = await api.get(`/projects?page=${page}&limit=${limit}&search=${search}&status=${status}`);
             if (response.data.success && Array.isArray(response.data.data)) {
                 const mappedProjects = response.data.data.map((project: any) => ({
                     id: project._id,
@@ -101,6 +133,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     progress: project.progress || 0,
                 }));
                 setProjects(mappedProjects);
+                if (response.data.pagination) {
+                    setProjectPagination(response.data.pagination);
+                }
             } else {
                 setProjects([]);
             }
@@ -110,11 +145,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    const refreshPayroll = async () => {
+    const refreshPayroll = async (page = 1, limit = 10, month = '', year = '', status = '') => {
         const token = localStorage.getItem('token');
         if (!token) return;
         try {
-            const response = await api.get('/payroll');
+            const statusParam = status ? `&status=${status}` : '';
+            const response = await api.get(`/payroll?page=${page}&limit=${limit}&month=${month}&year=${year}${statusParam}`);
             if (response.data.success && Array.isArray(response.data.data)) {
                 const mappedPayroll = response.data.data.map((p: any) => {
                     // Backend stores month as "January 2025" or similar
@@ -140,6 +176,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     };
                 });
                 setPayroll(mappedPayroll);
+                if (response.data.pagination) {
+                    setPayrollPagination(response.data.pagination);
+                }
             }
         } catch (error) {
             console.error('Error fetching payroll:', error);
@@ -151,7 +190,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const backendStatus = status.charAt(0).toUpperCase() + status.slice(1);
             const response = await api.put(`/payroll/${recordId}`, { status: backendStatus });
             if (response.data.success) {
-                await refreshPayroll();
+                await refreshPayroll(payrollPagination.currentPage, payrollPagination.limit);
             }
         } catch (error) {
             console.error('Error updating payroll status:', error);
@@ -160,19 +199,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     useEffect(() => {
         if (user) {
-            refreshStaff();
-            refreshClients();
-            refreshProjects();
-            refreshPayroll();
+            refreshStaff(1, 10, '', 'all');
+            refreshClients(1, 10, '');
+            refreshProjects(1, 10, '', 'all');
+            refreshPayroll(1, 10, '', '');
         }
     }, [user]);
 
     return (
         <AppContext.Provider value={{
-            staff, refreshStaff,
-            clients, refreshClients,
-            projects, refreshProjects,
-            payroll, refreshPayroll, updatePayrollStatus, setPayroll
+            staff, staffPagination, refreshStaff,
+            clients, clientPagination, refreshClients,
+            projects, projectPagination, refreshProjects,
+            payroll, payrollPagination, refreshPayroll, updatePayrollStatus, setPayroll
         }}>
             {children}
         </AppContext.Provider>

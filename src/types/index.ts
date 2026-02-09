@@ -25,6 +25,18 @@ export interface Staff {
   avatar?: string;
   assignedProjects: string[];
   password?: string;
+  gender?: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
+  dob?: string;
+  qualification?: string;
+  bankDetails?: {
+    accountNumber: string;
+    bankName: string;
+    ifscCode: string;
+  };
+  emergencyContact?: string;
+  address?: string;
+  bloodGroup?: string;
+  pincode?: string;
 }
 
 export interface Client {

@@ -1,12 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-
 const MainLayout: React.FC = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(window.innerWidth < 1024);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarCollapsed(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F6EFE6]">
@@ -16,17 +28,25 @@ const MainLayout: React.FC = () => {
       />
 
       <div
-        className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-[72px]' : 'ml-[260px]'
+        className={`transition-all duration-300 min-h-screen flex flex-col ${!sidebarCollapsed && !isMobile ? 'lg:ml-[260px]' : (isMobile ? 'ml-0' : 'lg:ml-[72px]')
           }`}
       >
         <Header
           onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
 
-        <main className="px-6 md:px-8 py-6">
+        <main className="flex-1 px-4 sm:px-6 md:px-8 py-6 w-full max-w-full overflow-hidden">
           <Outlet />
         </main>
       </div>
+
+      {/* Mobile Backdrop */}
+      {!sidebarCollapsed && isMobile && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
     </div>
   );
 };

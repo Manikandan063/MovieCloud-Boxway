@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2, Users, UserCheck, Briefcase, Plus } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { useApp } from '@/context/AppContext';
@@ -7,52 +7,53 @@ import DataTable from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Modal from '@/components/ui/Modal';
 import StaffForm from '@/components/forms/StaffForm';
+import StaffDetails from '@/components/ui/StaffDetails';
 import { roleLabels } from '@/utils/mockData';
 import type { Staff as StaffType } from '@/types';
 import { formatCurrency } from '@/utils/formatters';
 import { PageContainer } from '@/components/ui/Layout';
 import SearchInput from '@/components/ui/SearchInput';
 import StatCard from '@/components/ui/StatCard';
-import { Users, UserCheck, Briefcase } from 'lucide-react';
 
 const Staff: React.FC = () => {
-  const { staff, refreshStaff, projects } = useApp();
+  const { staff, staffPagination, refreshStaff, projects } = useApp();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffType | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<StaffType | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   const stats = useMemo(() => {
     return {
-      total: staff.length,
+      total: staffPagination.total || staff.length,
       active: staff.filter(s => projects.some(p => p.assignedStaff?.includes(s.id))).length,
       totalAssigned: projects.reduce((sum, p) => sum + (p.assignedStaff?.length || 0), 0)
     };
-  }, [staff, projects]);
+  }, [staff, projects, staffPagination]);
 
   React.useEffect(() => {
     if (location.state?.openRegister) {
       setIsModalOpen(true);
-      // Clear the state to prevent reopening on refresh/re-render logic quirks
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
 
+  // Debounced search/filter effect
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      refreshStaff(1, staffPagination.limit || 5, search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const filteredStaff = useMemo(() => {
-    if (!Array.isArray(staff)) return [];
-    return staff.filter((s) => {
-      const name = s?.name || '';
-      const email = s?.email || '';
-      const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) ||
-        email.toLowerCase().includes(search.toLowerCase());
-      const matchesRole = roleFilter === 'all' || s?.role === roleFilter;
-      return matchesSearch && matchesRole;
-    });
-  }, [staff, search, roleFilter]);
+  // Role filter effect
+  React.useEffect(() => {
+    refreshStaff(1, staffPagination.limit || 10, search);
+  }, [roleFilter]);
 
   const handleAddStaff = () => {
     setEditingStaff(null);
@@ -64,12 +65,17 @@ const Staff: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleViewStaff = (staffMember: StaffType) => {
+    setSelectedStaff(staffMember);
+    setIsViewModalOpen(true);
+  };
+
   const handleDeleteStaff = async (id: string) => {
     if (confirm('Are you sure you want to delete this staff member?')) {
       try {
         const response = await api.delete(`/users/${id}`);
         if (response.data.success) {
-          refreshStaff();
+          refreshStaff(staffPagination.currentPage, staffPagination.limit, search);
         }
       } catch (error) {
         console.error('Error deleting staff:', error);
@@ -84,22 +90,36 @@ const Staff: React.FC = () => {
       const payload = {
         name: data.name,
         email: data.email,
-        role: data.role.charAt(0).toUpperCase() + data.role.slice(1), // Backend expects 'Admin', 'Architect', etc.
-        contactInfo: { phone: data.phone },
+        role: data.role.charAt(0).toUpperCase() + data.role.slice(1),
+        contactInfo: {
+          phone: data.phone,
+          address: data.address
+        },
         salaryDetails: { basicSalary: data.salary },
         joiningDate: data.joiningDate,
-        password: data.password || 'Boxway@123'
+        password: data.password || 'Boxway@123',
+        gender: data.gender,
+        dob: data.dob,
+        qualification: data.qualification,
+        bankDetails: {
+          accountNumber: data.accountNumber,
+          bankName: data.bankName,
+          ifscCode: data.ifscCode,
+        },
+        emergencyContact: data.emergencyContact,
+        bloodGroup: data.bloodGroup,
+        pincode: data.pincode
       };
 
       if (editingStaff) {
         const response = await api.put(`/users/${editingStaff.id}`, payload);
         if (response.data.success) {
-          refreshStaff();
+          refreshStaff(staffPagination.currentPage, staffPagination.limit, search);
         }
       } else {
         const response = await api.post('/users/register', payload);
         if (response.data.success) {
-          refreshStaff();
+          refreshStaff(1, staffPagination.limit, '');
         }
       }
       setIsModalOpen(false);
@@ -116,15 +136,15 @@ const Staff: React.FC = () => {
       key: 'name',
       header: 'Staff Member',
       render: (item: StaffType) => (
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <span className="text-xs font-bold text-primary">
-              {item.name.split(' ').map(n => n[0]).join('')}
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+            <span className="text-[10px] font-bold text-primary">
+              {item.name.split(' ').map((n: string) => n[0]).join('')}
             </span>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground leading-none">{item?.name || 'Unknown'}</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{item?.email || 'No email'}</p>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-foreground truncate">{item?.name || 'Unknown'}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{item?.email || 'No email'}</p>
           </div>
         </div>
       ),
@@ -133,42 +153,44 @@ const Staff: React.FC = () => {
       key: 'role',
       header: 'Role',
       render: (item: StaffType) => (
-        <StatusBadge variant="info">{roleLabels[item.role]}</StatusBadge>
+        <StatusBadge variant="info" className="text-[10px] py-0 h-5">
+          {roleLabels[item.role] || item.role}
+        </StatusBadge>
       ),
     },
     {
       key: 'phone',
       header: 'Contact',
-      className: 'text-muted-foreground tabular-nums',
+      className: 'text-muted-foreground tabular-nums text-xs',
     },
     {
       key: 'joiningDate',
       header: 'Joined',
       render: (item: StaffType) => (
-        <span className="text-muted-foreground">
+        <span className="text-muted-foreground text-xs">
           {new Date(item.joiningDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
         </span>
       ),
     },
     {
       key: 'projects',
-      header: 'Projects',
+      header: 'Ventures',
       align: 'center' as const,
       render: (item: StaffType) => {
         const assignedCount = (projects || []).filter(p =>
           (p.assignedStaff || []).includes(item.id)
         ).length;
         return (
-          <span className="text-foreground font-semibold tabular-nums">{assignedCount}</span>
+          <span className="text-foreground font-semibold tabular-nums text-xs">{assignedCount}</span>
         );
       },
     },
     {
       key: 'salary',
-      header: 'Salary (Annual)',
+      header: 'Salary (Pa)',
       align: 'right' as const,
       render: (item: StaffType) => (
-        <span className="text-foreground font-semibold tabular-nums">
+        <span className="text-foreground font-semibold tabular-nums text-xs">
           {formatCurrency(item.salary)}
         </span>
       ),
@@ -187,7 +209,7 @@ const Staff: React.FC = () => {
             className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             title="Edit"
           >
-            <Edit2 className="w-4 h-4" />
+            <Edit2 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={(e) => {
@@ -197,7 +219,7 @@ const Staff: React.FC = () => {
             className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
             title="Delete"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       ),
@@ -206,59 +228,61 @@ const Staff: React.FC = () => {
 
   return (
     <PageContainer variant="dashboard">
-      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-display font-black text-foreground tracking-tighter leading-tight">Personnel Directory</h2>
-          <p className="text-sm text-muted-foreground mt-1.5 flex items-center gap-2">
-            {staff?.length || 0} professional team members across all departments.
+          <h2 className="text-2xl font-display font-black text-foreground tracking-tighter leading-tight">Personnel Directory</h2>
+          <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-2">
+            Managing {staffPagination.total || 0} professional team members across all departments.
           </p>
         </div>
-        <button onClick={handleAddStaff} className="btn-primary gap-2 h-11 px-6 shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30 active:scale-[0.98]">
-          <Plus className="w-4 h-4" />
-          <span className="font-black text-[11px] uppercase tracking-[0.2em]">Add Staff</span>
+        <button onClick={handleAddStaff} className="btn-primary gap-2 h-10 px-5 shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30 active:scale-[0.98]">
+          <Plus className="w-3.5 h-3.5" />
+          <span className="font-black text-[10px] uppercase tracking-[0.2em]">Add Staff</span>
         </button>
       </div>
 
-      {/* Extreme Stats Grid */}
-      <div className="bg-card border border-border/60 rounded-[2rem] shadow-xl overflow-hidden mb-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/40">
+      <div className="bg-card border border-border/60 rounded-2xl shadow-lg overflow-hidden mb-6 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/40">
           <StatCard
-            title="Active Workforce"
+            title="Workforce"
             value={stats.total}
             icon={Users}
             isSeamless
+            className="py-4"
           />
           <StatCard
-            title="Deployed Staff"
+            title="Deployed"
             value={stats.active}
             icon={UserCheck}
             variant="primary"
             isSeamless
+            className="py-4"
           />
           <StatCard
-            title="Venture Allocation"
+            title="Allocations"
             value={stats.totalAssigned}
             icon={Briefcase}
             variant="accent"
             isSeamless
+            className="py-4"
           />
         </div>
       </div>
 
-      <div className="bg-card border border-border/60 rounded-xl p-4 shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
+      <div className="bg-card border border-border/60 rounded-xl p-3 shadow-sm mb-5">
+        <div className="flex flex-col sm:flex-row gap-3">
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search by name or email..."
+            placeholder="Search team..."
             className="flex-1"
           />
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="input-field w-full md:w-56 h-10"
+            className="input-field w-full sm:w-40 md:w-48 h-10 text-xs"
           >
-            <option value="all">All Roles & Departments</option>
+            <option value="all">All Roles</option>
             <option value="admin">Administrator</option>
             <option value="architect">Architect</option>
             <option value="hr">HR Manager</option>
@@ -270,16 +294,29 @@ const Staff: React.FC = () => {
 
       <DataTable
         columns={columns}
-        data={filteredStaff}
+        data={staff}
         emptyMessage="No staff members match your criteria"
-        onRowClick={handleEditStaff}
+        onRowClick={handleViewStaff}
+        currentPage={staffPagination.currentPage}
+        totalPages={staffPagination.pages}
+        totalRecords={staffPagination.total}
+        onPageChange={(page) => refreshStaff(page, staffPagination.limit, search, roleFilter)}
       />
+
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        title="Professional Profile"
+        size="lg"
+      >
+        {selectedStaff && <StaffDetails staff={selectedStaff} />}
+      </Modal>
 
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}
-        size="lg"
+        size="xl"
       >
         <StaffForm
           initialData={editingStaff || undefined}

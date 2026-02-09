@@ -42,103 +42,116 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     (item) => user && item.roles.includes(user.role)
   );
 
+  // Helper for responsive checks in handlers
+  const isMobile = () => window.innerWidth < 1024;
+
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-[#3E2C24] flex flex-col transition-all duration-300 z-40 ${collapsed ? 'w-[72px]' : 'w-[260px]'
-        } border-r border-white/5`}
+      className={`fixed left-0 top-0 h-screen bg-[#3E2C24] flex flex-col transition-all duration-300 z-40 ${collapsed
+        ? 'w-0 -translate-x-full lg:w-[72px] lg:translate-x-0'
+        : 'w-[260px] translate-x-0'
+        } border-r border-white/5 shadow-2xl lg:shadow-none`}
     >
       {/* Logo */}
-      <div className="h-20 flex items-center justify-between px-6 border-b border-white/10">
-        {!collapsed && (
-          <div className="flex items-center gap-3 text-white">
-            <Logo size={24} />
-            <span className="font-bold text-xl tracking-[0.1em] uppercase">Boxway</span>
-          </div>
-        )}
+      <div className="h-20 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
+        <div className={`flex items-center gap-3 text-white ${collapsed ? 'lg:hidden' : 'flex'}`}>
+          <Logo size={24} />
+          <span className="font-bold text-xl tracking-[0.1em] uppercase">Boxway</span>
+        </div>
+
         {collapsed && (
-          <div className="flex items-center justify-center mx-auto text-white">
+          <div className="hidden lg:flex items-center justify-center mx-auto text-white">
             <Logo size={28} />
           </div>
         )}
+
         <button
           onClick={onToggle}
-          className={`p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors ${collapsed ? 'hidden' : ''}`}
+          className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors lg:hidden`}
         >
-          <ChevronLeft className="w-5 h-5 text-sidebar-muted" />
+          <ChevronLeft className="w-5 h-5 text-white/50" />
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto custom-scrollbar">
         {filteredNavItems.map((item) => {
           return (
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={() => {
+                if (isMobile()) onToggle();
+              }}
               className={({ isActive }) => `
-                flex items-center gap-4 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 group
+                flex items-center gap-4 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 group
                 ${isActive
                   ? 'bg-white/5 text-[#CFAE70] border-r-2 border-[#CFAE70]'
                   : 'text-white/50 hover:text-white hover:bg-white/5'
                 }
-                ${collapsed ? 'justify-center px-0' : ''}
+                ${collapsed ? 'lg:justify-center lg:px-0' : ''}
               `}
               title={collapsed ? item.label : undefined}
             >
               <item.icon className="w-4 h-4 flex-shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              <span className={`truncate ${collapsed ? 'lg:hidden' : 'block'}`}>{item.label}</span>
             </NavLink>
           );
         })}
       </nav>
 
-      <div className="border-t border-white/10 p-4">
+      <div className="border-t border-white/10 p-4 shrink-0">
         {user && ['admin', 'architect', 'hr', 'accountant'].includes(user.role) && (
           <NavLink
             to="/settings"
+            onClick={() => {
+              if (isMobile()) onToggle();
+            }}
             className={({ isActive }) => `
-              flex items-center gap-4 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 mb-2
+              flex items-center gap-4 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 mb-2
               ${isActive
                 ? 'bg-white/5 text-[#CFAE70] border-r-2 border-[#CFAE70]'
                 : 'text-white/40 hover:text-white hover:bg-white/5'
               }
-              ${collapsed ? 'justify-center px-0' : ''}
+              ${collapsed ? 'lg:justify-center lg:px-0' : ''}
             `}
             title={collapsed ? 'Settings' : undefined}
           >
             <Settings className="w-4 h-4 flex-shrink-0" />
-            {!collapsed && <span>Settings</span>}
+            <span className={`${collapsed ? 'lg:hidden' : 'block'}`}>Settings</span>
           </NavLink>
         )}
-        {!collapsed && user && (
-          <div className="flex items-center gap-3 px-2 py-3 mb-4 bg-white/5">
-            <div className="flex-1 min-w-0 px-2">
+
+        {user && (
+          <div className={`flex items-center gap-3 px-3 py-3 mb-4 bg-white/5 rounded-lg border border-white/5 ${collapsed ? 'lg:hidden' : 'flex'}`}>
+            <div className="flex-1 min-w-0">
               <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate">{user.name}</p>
               <p className="text-[9px] text-white/40 uppercase tracking-widest mt-1">{user.role}</p>
             </div>
           </div>
         )}
+
         <button
           onClick={logout}
           className={`
-            flex items-center gap-4 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500
-            text-white/40 hover:text-red-400 hover:bg-red-400/5 w-full
-            ${collapsed ? 'justify-center px-0' : ''}
+            flex items-center gap-4 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300
+            text-white/40 hover:text-red-400 hover:bg-red-400/5 w-full rounded-lg
+            ${collapsed ? 'lg:justify-center lg:px-0' : ''}
           `}
           title={collapsed ? 'Logout' : undefined}
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
-          {!collapsed && <span>Logout</span>}
+          <span className={`${collapsed ? 'lg:hidden' : 'block'}`}>Logout</span>
         </button>
       </div>
 
-      {/* Collapse Toggle (when collapsed) */}
+      {/* Collapse Toggle (only desktop) */}
       {collapsed && (
         <button
           onClick={onToggle}
-          className="absolute -right-3 top-20 w-6 h-6 bg-sidebar rounded-full border border-sidebar-border flex items-center justify-center hover:bg-sidebar-accent transition-colors"
+          className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-[#3E2C24] rounded-full border border-white/10 items-center justify-center hover:bg-white/10 transition-colors z-50 shadow-lg"
         >
-          <ChevronRight className="w-4 h-4 text-sidebar-muted" />
+          <ChevronRight className="w-4 h-4 text-white/50" />
         </button>
       )}
     </aside>
